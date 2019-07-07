@@ -106,17 +106,30 @@ var DeleteToDocs = func(w http.ResponseWriter, r *http.Request) {
 	util.Respond(w, response)
 }
 
-var UserRegister = func(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("UserRegister")
-	response := util.MetaMsg(true, "UserRegister")
+var Register = func(w http.ResponseWriter, r *http.Request) {
+	account := &models.Account{}
+
+	err := json.NewDecoder(r.Body).Decode(account)
+	if err != nil {
+		fmt.Println(err)
+		util.Respond(w, util.MetaMsg(false, "Invalid request"))
+		return
+	}
+
+	response := account.CreateAccount()
 	util.Respond(w, response)
 }
 
-var UserLogin = func(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("UserLogin")
-	response := util.MetaMsg(true, "UserLogin")
+var Login = func(w http.ResponseWriter, r *http.Request) {
+	account := &models.Account{}
+
+	err := json.NewDecoder(r.Body).Decode(account)
+	if err != nil {
+		fmt.Println(err)
+		util.Respond(w, util.MetaMsg(false, "Invalid request"))
+		return
+	}
+
+	response := account.Login()
 	util.Respond(w, response)
 }
-
-//TODO
-//1. Add all function required that is called from router

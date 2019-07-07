@@ -1,10 +1,13 @@
 package models
 
 import (
+	"os"
 	"strings"
 
+	"github.com/dgrijalva/jwt-go"
 	"github.com/jinzhu/gorm"
 	util "github.com/local/TaskListGo/util"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type Account struct {
@@ -36,28 +39,57 @@ func (account *Account) Validate() (map[string]interface{}, bool) {
 	return util.MetaMsg(true, "Requirement passed"), true
 }
 
-// func (account *Account) CreateAccount() map[string]interface{} {
-// 	if rsp, status := account.Validate(); !status {
-// 		return rsp
-// 	}
+func (account *Account) CreateAccount() map[string]interface{} {
+	if rsp, status := account.Validate(); !status {
+		return rsp
+	}
 
-// 	//TODO
-// 	//1. generate hashedPassword from user plaintext password
-// 	//use bcrypt.GenerateFromPassword
+	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(account.Password), bcrypt.DefaultCost)
+	account.Password = string(hashedPassword)
 
-// 	//2. create account of new user
+	GetDB().Create(account)
 
-// 	//3. return success response
-// }
+	if account.ID <= 0 {
+		return util.MetaMsg(false, "Failed to create account")
+	}
 
-// func (account *Account) Login() map[string]interface{} {
-// 	//TODO
-// 	//1. get account from DB with specified email
-// 	//return if email is not found
+	tk := &Token{UserId: account.ID}
+	token := jwt.NewWithClaims(jwt.GetSigningMethod("HS256"), tk)
+	tokenString, _ := token.SignedString([]byte(os.Getenv("jwt_secret")))
 
-// 	//2. compared the registered password hash with given password hash
-// 	//use bcrypt.CompareHashAndPassword
-// 	//return is there is mismatch
+	account.Token = tokenString
+	account.Password = ""
 
-// 	//3. return success response
-// }
+	response := util.MetaMsg(true, "Account is successfully created")
+	response["account"] = account
+	return response
+}
+
+func (account *Account) Login() map[string]interface{} {
+	registeredAccount := &Account{}
+	err := GetDB().Table("accounts").Where("email = ?", account.Email).First(registeredAccount).Error
+
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return util.MetaMsg(false, "Account is not recognized")
+		}
+		return util.MetaMsg(false, "There is something error")
+	}
+
+	err = bcrypt.CompareHashAndPassword([]byte(registeredAccount.Password), []byte(account.Password))
+
+	if err != nil && err == bcrypt.ErrMismatchedHashAndPassword {
+		return util.MetaMsg(false, "Password is Invalid")
+	}
+
+	tk := &Token{UserId: registeredAccount.ID}
+	token := jwt.NewWithClaims(jwt.GetSigningMethod("HS256"), tk)
+	tokenString, _ := token.SignedString([]byte(os.Getenv("jwt_secret")))
+
+	registeredAccount.Token = tokenString
+	registeredAccount.Password = ""
+
+	response := util.MetaMsg(true, "Successfully Login")
+	response["account"] = registeredAccount
+	return response
+}

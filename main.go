@@ -7,11 +7,14 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/local/TaskListGo/controllers"
+	"github.com/local/TaskListGo/middleware"
 )
 
 func main() {
 	router := mux.NewRouter()
 	api := router.PathPrefix("/api").Subrouter()
+
+	api.Use(middleware.JwtAuthentication)
 
 	api.HandleFunc("/", controllers.Hello).Methods(http.MethodGet)
 	api.HandleFunc("/todos", controllers.ListToDos).Methods(http.MethodGet)
@@ -20,8 +23,8 @@ func main() {
 	api.HandleFunc("/todos/{toDold}/action", controllers.ActionToDocs).Methods(http.MethodPost)
 	api.HandleFunc("/todos/{toDold}/edit", controllers.EditToDocs).Methods(http.MethodPost)
 	api.HandleFunc("/todos/{toDold}/delete", controllers.DeleteToDocs).Methods(http.MethodPost)
-	api.HandleFunc("/user/register", controllers.UserRegister).Methods(http.MethodPost)
-	api.HandleFunc("/user/login", controllers.UserLogin).Methods(http.MethodPost)
+	api.HandleFunc("/user/register", controllers.Register).Methods(http.MethodPost)
+	api.HandleFunc("/user/login", controllers.Login).Methods(http.MethodPost)
 
 	srv := &http.Server{
 		Handler:      api,
