@@ -1,9 +1,15 @@
 package controllers
 
 import (
+	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
+	"strconv"
 
+	"github.com/gorilla/mux"
+
+	"github.com/local/TaskListGo/models"
 	util "github.com/local/TaskListGo/util"
 )
 
@@ -14,38 +20,89 @@ var Hello = func(w http.ResponseWriter, r *http.Request) {
 }
 
 var ListToDos = func(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("List Todo")
-	response := util.MetaMsg(true, "List Todo")
+	data := models.GetToDo()
+	response := util.MetaMsg(true, "Success")
+	response["data"] = data
 	util.Respond(w, response)
 }
 
 var PertoDocs = func(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("get Pertodo")
-	response := util.MetaMsg(true, "get Pertodo")
+	params := mux.Vars(r)
+
+	toDoId, err := strconv.Atoi(params["toDold"])
+	if err != nil {
+		util.Respond(w, util.MetaMsg(false, "Params is invalid"))
+		return
+	}
+
+	// uint for positif absolute
+	data := models.SingleToDo(uint(toDoId))
+
+	response := util.MetaMsg(true, "Success")
+	response["data"] = data
 	util.Respond(w, response)
 }
 
 var CreateToDocs = func(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("CreateToDocs")
-	response := util.MetaMsg(true, "CreateToDocs")
+	todo := &models.Todo{}
+	decoder := json.NewDecoder(r.Body)
+
+	err := decoder.Decode(&todo)
+	if err != nil {
+		panic(err)
+	}
+	response := todo.Create()
 	util.Respond(w, response)
 }
 
 var ActionToDocs = func(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("ActionToDocs")
-	response := util.MetaMsg(true, "ActionToDocs")
+	todo := &models.Todo{}
+	params := mux.Vars(r)
+
+	toDoId, err := strconv.Atoi(params["toDold"])
+	if err != nil {
+		util.Respond(w, util.MetaMsg(false, "Params is invalid"))
+		return
+	}
+	todo.ID = uint(toDoId)
+	response := todo.ActionToDo()
 	util.Respond(w, response)
 }
 
 var EditToDocs = func(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("EditToDocs")
-	response := util.MetaMsg(true, "EditToDocs")
+	todo := &models.Todo{}
+	params := mux.Vars(r)
+	toDoId, err := strconv.Atoi(params["toDold"])
+	log.Println("params id : ", toDoId)
+	if err != nil {
+		util.MetaMsg(false, "Param is invalid")
+		return
+	}
+	todo.ID = uint(toDoId)
+	decoder := json.NewDecoder(r.Body)
+	err = decoder.Decode(&todo)
+	if err != nil {
+		panic(err)
+	}
+	response := todo.EditToDo()
 	util.Respond(w, response)
 }
 
 var DeleteToDocs = func(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("DeleteToDocs")
-	response := util.MetaMsg(true, "DeleteToDocs")
+	todo := &models.Todo{}
+	params := mux.Vars(r)
+	toDoId, err := strconv.Atoi(params["toDold"])
+	if err != nil {
+		util.MetaMsg(false, "Param is invalid")
+		return
+	}
+	todo.ID = uint(toDoId)
+	decoder := json.NewDecoder(r.Body)
+	err = decoder.Decode(&todo)
+	if err != nil {
+		panic(err)
+	}
+	response := todo.DeleteToDo()
 	util.Respond(w, response)
 }
 

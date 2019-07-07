@@ -11,7 +11,6 @@ import (
 
 func main() {
 	router := mux.NewRouter()
-
 	api := router.PathPrefix("/api").Subrouter()
 
 	api.HandleFunc("/", controllers.Hello).Methods(http.MethodGet)
